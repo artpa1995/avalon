@@ -1,8 +1,8 @@
-@extends('user.config.app')
-@section('title')Accounts @endsection
+@extends('user.layout.app')
+@section('title')Companies @endsection
 @section('contents')
 
-<div class="container-fluid mt-5">
+<div class="container-fluid mt-5 rounded bg-white py-3 px-3">
     <div class="row">
         <div class="col-10"></div>
         <div class="col-2 text-end">
@@ -10,7 +10,7 @@
         </div>
     </div>
 </div>
-<div class="container-fluid mt-5">
+<div class="container-fluid mt-5 rounded bg-white py-3 px-3">
 
     {{--<a href="#page_items" class="btn btn-primary" data-toggle="collapse">Companies</a>--}}
 
@@ -25,17 +25,25 @@
                 <th>Industry</th>
                 <th>Company phone</th>
                 <th>Company owner</th>
+                  <th></th>
             </tr>
             </thead>
             <tbody>
                 @foreach($companies as  $value)
-                <tr id="" data-toggle="modal" data-target="#edit_account_{{$value->id}}">
-                    <td>{{$value->name}}</td>
+                <tr{{--id="" data-toggle="modal" data-target="#edit_account_{{$value->id}}"--}} >
+                    <td><a href="{{ route('edit_company', [$value->id]) }}">{{$value->name}}</a></td>
                     <td>{{!empty($value->parentCompany->name) ? $value->parentCompany->name : ""}}</td>
                     <td>{{$value->companyTypes->name}}</td>
                     <td>{{$value->industriesTypes->name}}</td>
                     <td>{{$value->company_phone}}</td>
-                    <td>User123</td>
+                    <td>{{$value->ownerUser->name}}</td>
+                    <td>
+                        <button type="button" class="btn dropdown-toggle" data-toggle="dropdown">Edit</button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item text-primary" href="{{ route('edit_company', [$value->id]) }}">Edit</a>
+                            <a class="dropdown-item text-danger" href="{{ route('delete_company', [$value->id]) }}">Delete</a>
+                        </div>
+                    </td>
                 </tr>
               @endforeach
             </tbody>
@@ -46,13 +54,13 @@
 
 
 <div class="modal " id="open_account">
-    <div class="modal-dialog mt-5 modal-lg">
+    <div class="modal-dialog mt-5 modal-xl">
         <div class="modal-content">
             <div class="">
                 <div class="text-end pt-3 px-3">
                     <button type="button"  class="btn-close text- close" data-dismiss="modal"></button>
                 </div>
-                <h4 class="modal-title text-center">New Account</h4>
+                <h4 class="modal-title text-center">New Companies & Organisation</h4>
             </div>
             <div class="modal-body">
                 <form class="form-inline" action="{{route('add_account')}}" method="POST">
@@ -80,8 +88,8 @@
                         </div>
                         <div class="row">
                             <div class="col-6">
-                                <label  class="mr-sm-2">Account owner:</label>
-                                <select required class="custom-select form-control" name="owner_id">
+                                <label  class="mr-sm-2">Company owner:</label>
+                                <select required class="select2 custom-select form-control" name="owner_id">
                                     @if($users)
                                         @foreach($users as $user)
                                             <option value="{{$user->id}}">{{$user->name}}</option>
@@ -91,7 +99,7 @@
                             </div>
                             <div class="col-6">
                                 <label  class="mr-sm-2">Type:</label>
-                                <select required class="custom-select form-control" name="company_id">
+                                <select required class="select2 custom-select form-control" name="company_id">
                                     @foreach($company_types as  $company_type)
                                         <option value="{{$company_type->id}}" >{{$company_type->name}}</option>
                                     @endforeach
@@ -108,7 +116,7 @@
                             </div>
                             <div class="col-6">
                                 <label  class="mr-sm-2">Industry:</label>
-                                <select required class="custom-select form-control" name="industry_id">
+                                <select required class="select2 custom-select form-control" name="industry_id">
                                     @foreach($industries_types as  $industries_type)
                                         <option value="{{$industries_type->id}}">{{$industries_type->name}}</option>
                                     @endforeach
@@ -209,7 +217,7 @@
                     <div class="text-end pt-3 px-3" >
                         <button type="button" class="btn-close text-white close" data-dismiss="modal"></button>
                     </div>
-                    <h4 class="modal-title text-center">Edit Company</h4>
+                    <h4 class="modal-title text-center">Edit Companies & Organisation</h4>
                 </div>
                 <div class="modal-body" id="modal-body">
                     <div class="row">
@@ -217,17 +225,13 @@
                         {{--<button class="btn btn-light mb-2" id="">Personal</button>--}}
                         {{--<button  class="btn btn-light mb-2" id="">Bissnes</button>--}}
                     </div>
-                    <form class="" action="{{ route('edit_account', [$value->id]) }}" method="POST">
+                    <form class="" action="" method="POST">
                         @csrf
                         <div class="">
                             <div class="row">
                                 <div class="col-6">
                                     <label for="personal_name" class="mr-sm-2">Company name:</label>
-
                                     <input type="text" class="form-control mb-2 mr-sm-2" placeholder="Company name" name="name" value="{{$value->name}}" id="" required>
-
-                                    <input type="hidden" value="{{ Auth::user()->name }}" id=""  class="" required>
-
                                 </div>
                                 <div class="col-6" id="parent_id_select_2">
                                     <label for="parent_account" class="mr-sm-2">Parent account:</label>
@@ -366,47 +370,15 @@
             $('#bissnes_name').removeAttr('name');
         })
 
-
-        $('#parent_account').on('change',function(){
-
-            let parent_account = $(this).val();
-            $.ajax({
-                url:'get_parent_account_ajax',
-                type:"post",
-                datatType : 'json',
-                data: {"parent_account" : parent_account, "_token": "<?php echo e(csrf_token()); ?>"},
-
-                success: function(resonse){
-
-                    if(resonse !== null){
-                        //  console.log(resonse.length);
-                        for(let i = 0; i<=resonse.length; i++){
-                            //  console.log(resonse[i].name);
-                        }
-                        // for (let prop of resonse) {
-
-                        //    // for (let res  in prop) {
-                        //     console.log(prop.id);
-                        //  //   }
-                        // // $('#parent_account_val').val(resonse.id);
-                        //   }
-                    }
-                },
-            })
-        })
     })
     $(document).ready(function() {
-        $('.select2').select2({
-            dropdownParent: $('#open_account')
-        });
-
+        $('.select2').each(function(){
+            $(this).select2({
+                dropdownParent:  $(this).parent()
+            });
+        })
     });
-    $(document).ready(function() {
 
-        $('.select2_2').select2({
-            dropdownParent: $('.edit_account')
-        });
-    });
 </script>
 @endsection
 
