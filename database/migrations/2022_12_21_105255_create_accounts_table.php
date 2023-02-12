@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCompaniesTable extends Migration
+class CreateAccountsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,18 +13,20 @@ class CreateCompaniesTable extends Migration
      */
     public function up()
     {
-        Schema::create('companies', function (Blueprint $table) {
+        Schema::create('accounts', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->bigInteger('user_id')->unsigned()->index()->nullable();
             $table->string('owner_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->bigInteger('company_id')->unsigned()->index()->nullable();
-            $table->foreign('company_id')->references('id')->on('company_types')->onDelete('cascade');
+            //$table->dropForeign('user_id'); //this is for delete Foreign
+            $table->bigInteger('account_type_id')->unsigned()->index()->nullable();
+            $table->foreign('account_type_id')->references('id')->on('company_types')->onDelete('cascade');
             $table->bigInteger('industry_id')->unsigned()->index()->nullable();
             $table->foreign('industry_id')->references('id')->on('industries_types')->onDelete('cascade');
             $table->integer('parent_id')->nullable();
-            $table->string('company_phone')->nullable();
+            $table->integer('account_personality_type')->nullable();
+            $table->string('account_phone')->nullable();
             $table->string('website')->nullable();
             $table->string('additional_phone')->nullable();
             $table->string('employees')->nullable();
@@ -50,6 +52,6 @@ class CreateCompaniesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('companies');
+        Schema::dropIfExists('accounts');
     }
 }
