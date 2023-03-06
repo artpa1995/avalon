@@ -5,12 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AddressRelation extends Model
+class TaxReturnPdf extends Model
 {
     use HasFactory;
 
-    public function addresses(){
-        return $this->hasOne(Address::class, 'id','address_id');
-    }
-
+    
 }

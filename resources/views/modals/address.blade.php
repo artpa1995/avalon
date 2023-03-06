@@ -82,9 +82,10 @@
     </div>
 </div>
 
-@if(!Route::currentRouteNamed('addresses'))
+@if(
+!Route::currentRouteNamed('addresses') && !Route::currentRouteNamed('address_by_url'))
     <div class="modal " id="chose_address">
-        <div class="modal-dialog mt-5 modal-sm">
+        <div class="modal-dialog mt-5 modal-md">
             <div class="modal-content">
                 <div class="">
                     <div class="text-end pt-3 px-3">
@@ -114,13 +115,26 @@
                                 <div class="col-12">
                                     <label  class="mr-sm-2">Address</label>
                                     <div>
-                                        <select class="select2 custom-select form-control" name="address_id" id="address_id">
+                                        <select class="select2 custom-select form-control choose_address_data" name="address_id" id="address_id">
                                           <option value=""></option>
                                           @foreach($addresses as $key => $address)
-                                            <option value="{{$address->id}}">{{$address->title??"Unknown name"}}</option>
+                                          <option 
+                                          value="{{$address->id}}"
+                                           data-address_1="{{$address->address_1?$address->address_1.", " :""}}"
+                                           data-address_2="{{$address->address_2?$address->address_2.", " :""}} "
+                                           data-address_3="{{$address->address_3? $address->address_3.", ":""}}"
+                                           data-post_code_zip="{{$address->post_code_zip? $address->post_code_zip." ":""}}"
+                                           data-city="{{$address->city? $address->city.", ":""}}"
+                                           data-state="{{$address->state && $address->state->name? $address->state->name.', ':""}}"
+                                           data-country="{{$address->country && $address->country->name?$address->country->name.", ":""}}"
+                                           >
+                                                {{$address->title??"Unknown name"}}</option>
                                           @endforeach
                                         </select>
                                     </div>
+                                </div>
+                                <div class="col-12 address_all_data_show">
+
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -142,7 +156,7 @@
     </div>
 
     <div class="modal " id="use_address">
-        <div class="modal-dialog mt-5 modal-sm">
+        <div class="modal-dialog mt-5 modal-md">
             <div class="modal-content">
                 <div class="">
                     <div class="text-end pt-3 px-3">
@@ -172,13 +186,35 @@
                                 <div class="col-12">
                                     <label  class="mr-sm-2">Address</label>
                                     <div>
-                                        <select class="select2 custom-select form-control" name="address_id" id="address_id">
+                                        <select class="select2 custom-select form-control choose_address_data" name="address_id" id="address_id">
                                           <option value=""></option>
                                           @foreach($all_addresses as $key => $all_address)
-                                            <option value="{{$all_address->id}}">{{$all_address->title??"Unknown name"}}</option>
+                                            <option 
+                                            value="{{$all_address->id}}"
+                                             data-address_1="{{$all_address->address_1?$all_address->address_1.", " :""}}"
+                                             data-address_2="{{$all_address->address_2?$all_address->address_2.", " :""}} "
+                                             data-address_3="{{$all_address->address_3? $all_address->address_3.", ":""}}"
+                                             data-post_code_zip="{{$all_address->post_code_zip? $all_address->post_code_zip." ":""}}"
+                                             data-city="{{$all_address->city? $all_address->city.", ":""}}"
+                                             data-state="{{$all_address->state && $all_address->state->name? $all_address->state->name.', ':""}}"
+                                             data-country="{{$all_address->country && $all_address->country->name?$all_address->country->name.", ":""}}"
+                                             >
+                                                {{$all_address->title??"Unknown name"}}
+                                                {{-- {{$all_address->address_1?$all_address->address_1."," :""}} 
+
+                                                {{$all_address->address_2?$all_address->address_2."," :""}} 
+                                                {{$all_address->address_3? $all_address->address_3.",":""}}
+                                                {{$all_address->post_code_zip? $all_address->post_code_zip." ":""}}
+                                                {{$all_address->city? $all_address->city.",":""}}
+                                                {{$all_address->state && $all_address->state->name? $all_address->state->name.',':""}}
+                                                {{$all_address->country && $all_address->country->name?$all_address->country->name.",":""}} --}}
+                                            </option>
                                           @endforeach
                                         </select>
                                     </div>
+                                </div>
+                                <div class="col-12 address_all_data_show">
+
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -204,8 +240,23 @@
     $(document).ready(function(){
 
 
+        $('.choose_address_data').on('change', function(){
+            let data_address_1  = $(this).find(':selected').attr('data-address_1');
+            let data_address_2 = $(this).find(':selected').attr('data-address_2');
+            let data_address_3 = $(this).find(':selected').attr('data-address_3');
+            let data_post_code_zip = $(this).find(':selected').attr('data-post_code_zip');
+            let data_city = $(this).find(':selected').attr('data-city');
+            let data_state = $(this).find(':selected').attr('data-state');
+            let data_country = $(this).find(':selected').attr('data-country');
+            let data = data_address_1+" "+data_address_2+" "+data_address_3+" "+data_city+" "+data_state+" "+data_post_code_zip+" "+data_country;
+
+            $('.address_all_data_show').empty();
+            $('.address_all_data_show').append('<p>'+data+'</p>');
+        })
+
         $('.main_address').on('click',function(){
             let data =  $(this).data('all-data');
+            console.log(data);
             let page_id = $('#page_id').val();
             let page_url = $('#page_url').val()+'_id';
             let address = $('#address_id');
@@ -229,6 +280,18 @@
                     }
                 })
             }
+            let state_name = '';
+            if(data.state && data.state.name){
+                state_name = data.state.name+" ";
+            }
+            let country_name = '';
+            if(data.country && data.country.name){
+                country_name = data.country.name
+            }
+
+            let dataa = data.address_1+" "+data.address_2+" "+data.address_3+" "+data.city+" "+state_name+" "+data.post_code_zip+" "+country_name;
+            $('.address_all_data_show').empty();
+            $('.address_all_data_show').append('<p>'+dataa+'</p>');
         })
 
         $("#address_countries").on("change", function (e) {

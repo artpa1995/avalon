@@ -1,6 +1,6 @@
 <div class="col-12 rounded bg-white py-3 px-3">
     <div class="row mt-3">
-        <div class="col-5  df_jsfs_amc">
+        <div class="col-5  df_jsfs_amc {{$account->account_personality_type == 1 ? "" : "d-none"}}">
             <div  class="icon_small bg_c_contact" >
                 <img src="{{url('image/contact_120.png')}}" alt="">
             </div>
@@ -57,7 +57,7 @@
         </div>
     </div>
 </div>
-<div class="col-12 rounded mt-3">
+<div class="col-12 rounded mt-3 {{$account->account_personality_type == 1 ? "" : "d-none"}}">
     <div class=" account_info_btn collaps_show rounded px-3 py-2 bg-white  " data-toggle="collapse" data-target="#contacts" style="cursor:pointer">
         <div class="col-12 ">
             <div class="row">
@@ -139,9 +139,11 @@
                 </div>
         @endforeach
         </div>
-        <div class="row text-center py-3">
-            <a href="{{ route('notes', [$url,$id]) }}" class=" text-primary">View All</a>
-        </div>
+        @if($notes->count())
+            <div class="row text-center py-3">
+                <a href="{{ route('notes', [$url,$id]) }}" class=" text-primary">View All</a>
+            </div>
+        @endif
     </div>
 </div>
 <div class="col-12 rounded mt-3">
@@ -204,9 +206,11 @@
                 </div> 
             @endforeach
         </div>
-        <div class="row text-center py-3">
-            <a href="{{ route('files', [$url,$id]) }}" class=" text-primary">View All</a>
-        </div>
+        @if($files->count())
+            <div class="row text-center py-3">
+                <a href="{{ route('files', [$url,$id]) }}" class=" text-primary">View All</a>
+            </div>
+        @endif
     </div>
 </div>
 <div class="col-12 rounded mt-3">
@@ -233,7 +237,16 @@
             @foreach($addresses as $key => $address)
                 <div class="mt-3 border-bottom">
                     <div class="row main_address cursor-pointer" data-toggle="modal" data-target="#chose_address" data-all-data="{{$address}}">
-                        <div class="col-8">{{$address->title??"Unknown name"}}</div>
+                        <div class="col-8">
+                            {{$address->title??"Unknown name"}} 
+                            {{$address->address_1?$address->address_1."," :""}} 
+                            {{$address->address_2?$address->address_2."," :""}} 
+                            {{$address->address_3? $address->address_3.",":""}}
+                            {{$address->city? $address->city.",":""}}
+                            {{$address->state && $address->state->name? $address->state->name.'':""}}
+                            {{$address->post_code_zip? $address->post_code_zip." ":""}}
+                            {{$address->country && $address->country->name?$address->country->name.",":""}}
+                        </div>
                         <div class="col-4">
                             @foreach($address->addressRelation as $add_rel)
                                 @if($add_rel->account_id == $id && !empty($add_rel->address_type))
@@ -245,9 +258,11 @@
                 </div> 
             @endforeach
         </div>
-        <div class="row text-center py-3">
-            <a href="{{ route('addresses') }}" class=" text-primary">View All</a>
-        </div>
+        @if($addresses->count())
+            <div class="row text-center py-3">
+                <a href="{{ route('address_by_url', [$url,$id]) }}" class=" text-primary">View All</a>
+            </div>
+        @endif
     </div>
 </div>
 {{--<div class="col-12 rounded mt-3">--}}

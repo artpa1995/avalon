@@ -12,6 +12,7 @@ use App\Models\TypeOfCompaneis;
 use App\Models\FileReations;
 use App\Models\CompanyType;
 use App\Models\CompanyFile;
+use App\Models\TaxReturns;
 use App\Models\Address;
 use App\Models\Account;
 use App\Models\Company;
@@ -45,6 +46,9 @@ class CompaniesController extends Controller
                 'November',
                 'December',
             );
+
+
+    public $taxYears = [];
 
     public function index()
     {
@@ -116,6 +120,12 @@ class CompaniesController extends Controller
         $company->status_date = $request->input('status_date');
         $company->month = $request->input('month');
         $company->day = $request->input('day');
+        $company->company_activity = $request->input('company_activity');
+        $company->address1 = $request->input('address1');
+        $company->address2 = $request->input('address2');
+        $company->city = $request->input('city');
+        $company->zip = $request->input('zip');
+        $company->correspondence_state = $request->input('correspondence_state');
 
         if($company->save()){
 
@@ -184,12 +194,19 @@ class CompaniesController extends Controller
         if(empty($company)){
             return redirect()->route('companies')->with('danger', "Not Found");
         }
+        
+        $incorporationTime = $company->incorporation_date;
+        $incorporationYear = date('Y', strtotime($incorporationTime));
+        $all_tax_years = TaxReturns::where('company_id', $id)->get(['tax_end'])->toArray();
+        $this->get_tax_years($company, $incorporationYear, $all_tax_years);
+
         $notifications = new NotificationController;
         return view('user.company.edit', [
             'company' => $company,
             'company_types' => TypeOfCompaneis::all(),
             'countries' => Country::with(['states'])->get(),
             'accounts' => Account::where('user_id', '=', Auth::user()->id)->get(['id', 'name']),
+            'individual_accounts'=> Account::where('user_id', '=', Auth::user()->id)->where('account_personality_type', '=', 0)->get(['id', 'name']),
             'contacts' => Contact::where('user_id', '=', Auth::user()->id)->get(['id', 'title']),
             'users'=>User::where('id', '!=', Auth::user()->id)->get(['id', 'email', 'first_name', 'last_name']),
             'companies' =>Company::where('user_id', '=', Auth::user()->id)->get(['id', 'name']),
@@ -207,18 +224,48 @@ class CompaniesController extends Controller
             'notes' => Notes::where('company_id', '=', $id)->get(),
             'files' => FileReations::where('company_id', '=', $id)->where('status', '=', 1)->with('file')->get(),
             'files_data' => FileReations::where('user_id', '=', Auth::user()->id)->with('file')->get(),
-            'corporate_appointments' => CorporateAppointment::where('user_id', '=', Auth::user()->id)->where('company_id', '=', $id)->with('roles')->get(),
+            'corporate_appointments' => CorporateAppointment::where('user_id', '=', Auth::user()->id)->where('company_id', '=', $id)->with('roles')->with('company')->get(),
             'appointments_roles' => AppointmentsRole::all(),
             'address_providers' => AddressProvider::where('user_id', '=', Auth::user()->id)->get(),
-            'addresses' => Address::where('user_id', '=', Auth::user()->id)
-            ->with('country')
-            ->with('state')
-            ->with('addressRelation')
-            ->whereHas('addressRelation', function($q) use($id){$q->where('company_id', $id);})->get(),
+            'addresses' => Address::where('user_id', '=', Auth::user()->id)->with('country')->with('state')->with('addressRelation')->whereHas('addressRelation', function($q) use($id){$q->where('company_id', $id);})->get(),
             'all_addresses' => Address::where('user_id', '=', Auth::user()->id)->with('country')->with('state')->with('addressRelation')->get(),
             'months' => $this->months,
+            'tax_returns' => TaxReturns::where('company_id', $id)->with('pdfFile')->get(),
+            // 'pdf_files' =>
+            // 'tax_returns_end_date' => $all_tax_years,
+            'tax_years' => $this->taxYears,
         ]);
 
+    }
+
+    public function get_tax_years($company, $year, $all_tax_years)
+    {
+        $month = $company->month;
+        $day = $company->day;
+        // dd([$month, $day]);
+        if(!$month || !$day || !$company->incorporation_date){
+            return $this->taxYears = "wrong";
+        }
+        $month = $month < 10 ? "0$month" : $month;
+        $day = $day < 10 ? "0$day" : $day;
+        $taxDate = strtotime("$year-$month-$day");
+        $flag = 1;
+
+        foreach ($all_tax_years as $all_tax_year){
+            if("$year-$month-$day" == $all_tax_year['tax_end']){
+                $flag = 0;
+            }
+        }
+
+        if($taxDate < time() && $taxDate > strtotime($company->incorporation_date) && $flag) {
+            $this->taxYears[] = date('Y-m-d', $taxDate);
+            $year = $year + 1;
+            return $this->get_tax_years($company, $year, $all_tax_years);
+        }elseif(($year + 1) < date('Y')) {
+            $year = $year + 1;
+            return $this->get_tax_years($company, $year, $all_tax_years);
+        }
+        return;
     }
 
     /**
@@ -262,17 +309,30 @@ class CompaniesController extends Controller
             $company->status_date = $request->input('status_date');
             $company->month = $request->input('month');
             $company->day = $request->input('day');
+            $company->company_activity = $request->input('company_activity');
+            $company->address1 = $request->input('address1');
+            $company->address2 = $request->input('address2');
+            $company->city = $request->input('city');
+            $company->zip = $request->input('zip');
+            $company->correspondence_state = $request->input('correspondence_state');
 
             $fale_paths = ['file_path_1','file_path_2','file_path_3','file_path_4'];
            
             foreach($fale_paths as $fale_path){
+                $CompanyFile = CompanyFile::where('company_id', '=', $id)->where('file_type', '=', $fale_path)->get()->first();
+
                 if( !empty($request->input($fale_path))){
-                    $CompanyFile = new CompanyFile;
-                    $CompanyFile->user_id = Auth::user()->id; 
-                    $CompanyFile->company_id = $id;
-                    $CompanyFile->file_type = $fale_path;
-                    $CompanyFile->path = $request->input($fale_path);;
-                    $CompanyFile->save();
+                    if(empty($CompanyFile)){
+                        $CompanyFile = new CompanyFile;
+                        $CompanyFile->user_id = Auth::user()->id; 
+                        $CompanyFile->company_id = $id;
+                        $CompanyFile->file_type = $fale_path;
+                        $CompanyFile->path = $request->input($fale_path);
+                        $CompanyFile->save();
+                    }else{
+                        $CompanyFile->path = $request->input($fale_path);
+                        $CompanyFile->save();
+                    }
                 }
             }
 
@@ -357,4 +417,6 @@ class CompaniesController extends Controller
         $files->save();
         return response()->json(['code' => 200, 'msg' => $filename]);
     }
+
+
 }
